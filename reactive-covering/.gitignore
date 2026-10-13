@@ -1,8 +1,0 @@
-__pycache__/
-.ipynb_checkpoints/
-.venv/
-*.lic
-gurobi.log
-# données et énoncé ONERA : propriété de l'ONERA, ne pas publier
-data/*.json
-*.pdf
