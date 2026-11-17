@@ -5,41 +5,36 @@ Projet en binôme (C. Pralet, ONERA, 2026-2027). Soutenance le 20/11/26, rendu l
 ## Installation
 ```bash
 python -m venv .venv && source .venv/bin/activate   # Windows : .venv\Scripts\activate
-pip install -r requirements.txt
+pip install gurobipy pandas matplotlib ipykernel
 ```
 **Gurobi** : la licence d'essai pip est limitée en taille (≈2000 variables/contraintes) et ne suffit pas pour
 `data4` / `data2`. Chacun doit demander sa **licence académique gratuite** (compte Gurobi avec mail universitaire,
 puis `grbgetkey <clé>` depuis le réseau de l'école ou le VPN).
 
-## Données
-L'énoncé et les données appartiennent à l'ONERA : ils sont dans le `.gitignore`.
-Copier `data12.json`, `data4.json`, `data2.json` (et `countries.geo.json` pour les cartes) dans `data/`.
-
 ## Structure
 ```
-src/io_utils.py       lecture données / écriture solution JSON
-src/evaluate.py       coût + requêtes satisfaites par priorité (métriques de l'étape 1)
-src/milp_complete.py  MILP Gurobi, passages complets (étape 2)
-src/pareto.py         front de Pareto coût / satisfaction par epsilon-contrainte (étape 4)
-run_milp.py           python run_milp.py data/data12.json [coût_max]
-notebooks/            notebook final (.ipynb) à rendre
-results/              solutions générées
+data/                                  instances (data12, data4, data2) + solutions fournies
+src/reactive_covering.ipynb            notebook fourni (solveur de base aléatoire)
+src/solution1_reactive_covering.ipynb  MILP passages complets (data12)
+src/solution2_reactive_covering.ipynb  MILP passages partiels (data12)
+src/etude_complete.ipynb               étude complète : métriques, glouton, MILP, comparaison 3 instances, Pareto
+src/countries.geo.json                 fond de carte pour plotSolution
 ```
+Les notebooks se lancent depuis `src/` (les données sont lues dans `../data/`).
 
-## Modèle (passages complets)
-- `x_p ∈ {0,1}` : passage p réservé ; `y_r ∈ {0,1}` : requête r satisfaite
-- `y_r ≤ Σ x_p` sur les passages couvrant un accès de `A_r` (durée d'accès ≥ `minVisiDuration`)
-- coût = Σ (`fixedPassCost` + `passCostPerTimeUnit` × durée) · `x_p`
-- objectif : max Σ w_prio(r)·y_r − ε·coût, ou max satisfaction sous `coût ≤ budget`
+## Modèles
+- `x_p ∈ {0,1}` : passage p réservé ; en partiel `debut_p`, `fin_p` (fenêtre réservée) et `z_a ∈ {0,1}` (accès couvert)
+- accès couvert si le chevauchement fenêtre / accès ≥ `minVisiDuration` (30 s)
+- coût = Σ (`fixedPassCost` + `passCostPerTimeUnit` × durée réservée)
+- objectif : min coût en satisfaisant tout, ou max satisfaction pondérée sous `coût ≤ budget` (Pareto)
 
-## Résultat de départ
-`data12` : 4 passages, coût 1525, 225/225 requêtes satisfaites (optimal prouvé).
-
-## Pistes
-- passages partiels (étape 3) : variables de début/fin par passage
-- heuristique gloutonne / recherche locale pour comparer au MILP
-- front de Pareto (`src/pareto.py`)
+## Résultats (coût minimal, toutes requêtes satisfaites, ≤ 2 min)
+| instance | solution fournie | glouton complets | MILP complets | glouton partiels | MILP partiels |
+|---|---|---|---|---|---|
+| data12 | 3245 | 2122 | 1525 (opt.) | 1453 | 1078 |
+| data4  | 14870 | 10021 | 9991 (opt.) | 6258 | ≈5995 |
+| data2  | 19824 | 17055 | 16847 (opt.) | 11372 | 10872 (opt.) |
 
 ## Travail à deux
-Une branche par fonctionnalité (`git switch -c feat/glouton`), pull request, relecture par l'autre.
+Une branche par fonctionnalité (`git switch -c feat/xxx`), pull request, relecture par l'autre.
 Notebooks : `nbstripout --install` pour éviter des diffs énormes.
